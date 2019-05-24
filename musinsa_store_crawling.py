@@ -17,7 +17,7 @@ def get_submenu_link(menu):
         sub_link = 'https://store.musinsa.com/app/items/lists/{0}'.format(sub_num)
         with urllib.request.urlopen(sub_link, context=context) as sub_menu_url:
             sub_menu_page = sub_menu_url.read()
-        sub_menu_data = BeautifulSoup(sub_menu_page, 'html.parser')
+        sub_menu_data = BeautifulSoup(sub_menu_page, 'lxml')
         pages = int(sub_menu_data.find('span', {'class': 'totalPagingNum'}).get_text().strip())
         print(sub_menu + ' has total ' + str(pages) + ' pages.')
 
@@ -36,7 +36,7 @@ def get_submenu_link(menu):
 def get_product_list(page_link):
     with urllib.request.urlopen(page_link, context=context) as page_url:
         page_info = page_url.read()
-    sample_data = BeautifulSoup(page_info, 'html.parser')
+    sample_data = BeautifulSoup(page_info, 'lxml')
 
     item_boxs = sample_data.find('ul', {'id': 'searchList'})
     item_box = item_boxs.find_all('li', {'class': 'li_box'})
@@ -53,7 +53,7 @@ def get_product_info(sub_url):
         specific_page = specific_url.read()
 
     # 페이지 파싱
-    specific_data = BeautifulSoup(specific_page, 'html.parser')
+    specific_data = BeautifulSoup(specific_page, 'lxml')
     # 이름
     product_name = specific_data.find('span', {'class': 'product_title'}).find('span')
     print('이름: ' + product_name.get_text())
@@ -79,7 +79,6 @@ def get_product_info(sub_url):
     product_info_arr = []
 
     # product_Article Class 는 Product Info, Delivery Info, Price Info 3개로 나뉘어져 있음 -> 맨 앞의 1개만 받아오기
-    sample = (specific_data.find('ul', {'class': 'product_article'}))
     product_info = specific_data.find('ul', {'class': 'product_article'}).children
     for info in product_info:
         if isinstance(info, Tag):
@@ -135,7 +134,7 @@ def get_product_info(sub_url):
 # 메인 화면을 파싱한다.
 with urllib.request.urlopen(root_url, context=context) as url:
     home = url.read()
-home_data = BeautifulSoup(home, 'html.parser')
+home_data = BeautifulSoup(home, 'lxml')
 
 # 홈페이지 내의 카테고리를 딕셔너리 타입으로 만든다.
 category_link = dict()
