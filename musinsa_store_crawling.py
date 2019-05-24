@@ -1,9 +1,7 @@
 from bs4 import BeautifulSoup, Tag
 import urllib.request
 import ssl  # urllib의 오류 해결을 위한 라이브러리
-import time
 # urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed (_ssl.c:749)
-
 
 root_url = 'https://store.musinsa.com'
 context = ssl._create_unverified_context()
@@ -38,8 +36,8 @@ def get_product_list(page_link):
         page_info = page_url.read()
     sample_data = BeautifulSoup(page_info, 'lxml')
 
-    item_boxs = sample_data.find('ul', {'id': 'searchList'})
-    item_box = item_boxs.find_all('li', {'class': 'li_box'})
+    item_boxes = sample_data.find('ul', {'id': 'searchList'})
+    item_box = item_boxes.find_all('li', {'class': 'li_box'})
     for item in item_box:
         item_info = item.find('div', {'class': 'li_inner'}).find('a')['href']
         print('About ' + item_info)
@@ -75,60 +73,55 @@ def get_product_info(sub_url):
     product_subtype = category_arr[2].get_text()
     print('세부 종류: ' + product_subtype)
 
-    # 제품 정리 목록을 받아온다.
-    product_info_arr = []
-
-    # product_Article Class 는 Product Info, Delivery Info, Price Info 3개로 나뉘어져 있음 -> 맨 앞의 1개만 받아오기
-    product_info = specific_data.find('ul', {'class': 'product_article'}).children
-    for info in product_info:
-        if isinstance(info, Tag):
-            product_info_arr.append(info)
-
     # 시즌
-    if product_info_arr is None:
-        print('No Information!')
-        time.sleep(3)
-
+    product_season = specific_data.find('span', {'class': 'txt_gender'}).parent.find('strong')
+    if product_season:
+        product_season = product_season.get_text().replace('\t', '').replace(' ', '').strip()
     else:
-        product_season = product_info_arr[1].find('strong').get_text().replace('\t', '').replace(' ', '').strip()
-        print('시즌: ' + product_season)
+        product_season = None
+    print('시즌: ' + str(product_season))
 
-        # 성별
-        product_gender = product_info_arr[1].find('span', {'class': 'txt_gender'}).get_text().strip()
-        print('성별: ' + product_gender)
-        product_popularity_arr = []
-        product_popularity = product_info_arr[2].find('p', {'class': 'product_article_contents'}).find_all('strong')
-        for popularity in product_popularity:
-            if isinstance(popularity, Tag):
-                product_popularity_arr.append(popularity)
+    # 성별
+    product_gender = specific_data.find('span', {'class': 'txt_gender'}).get_text().strip()
+    print('성별: ' + product_gender)
 
-        # 조회수
-        product_view = product_popularity_arr[0].get_text()
-        print('조회수: ' + product_view)
+    # 조회수
+    product_view = specific_data.find_all('span', {'class': 'pageview_number'})[0].previous_sibling.get_text()
+    print('조회수: ' + product_view)
 
-        # 장바구니+관심
-        product_interest = product_popularity_arr[1].get_text()
-        print('장바구니+관심상품: ' + product_interest)
+    # 장바구니+관심
+    product_interest = specific_data.find('span', {'class': 'wish_number'}).previous_sibling.get_text()
+    print('장바구니+관심상품: ' + str(product_interest))
 
-        # 누적 판매
-        product_total_sell = product_info_arr[3].find('p', {'class': 'product_article_contents'}).find('strong').get_text()
-        print('누적 판매: ' + product_total_sell)
+    # 누적 판매
+    if len(specific_data.find_all('span', {'class': 'pageview_number'})) > 1:
+        product_total_sell = int(specific_data.find_all('span', {'class': 'pageview_number'})[1].previous_sibling.get_text().replace(',', '').replace('개', ''))
+    else:
+        product_total_sell = 0
+    print('누적 판매: ' + str(product_total_sell))
 
-        # 좋아요
-        product_like = product_info_arr[4].find('span', {'class': 'prd_like_cnt'}).get_text()
-        print('좋아요: ' + product_like)
+    # 좋아요
+    product_like = specific_data.find('span', {'class': 'prd_like_cnt'})
+    if product_like:
+        product_like = product_like.get_text()
+    else:
+        product_like = 0
+    print('좋아요: ' + str(product_like))
 
-        # 해시태그
-        product_hashtag_arr = []
-        product_hashtag = product_info_arr[6].find_all('a', {'class': 'listItem'})
-        for hashtag in product_hashtag:
-            if isinstance(hashtag, Tag):
-                product_hashtag_arr.append(hashtag['onclick'].split("'")[1])
-        print(product_hashtag_arr)
+    # 해시태그
+    product_hashtag_arr = []
+    product_hashtag = specific_data.find_all('a', {'class': 'listItem'})
+    for hashtag in product_hashtag:
+        if isinstance(hashtag, Tag):
+            product_hashtag_arr.append(hashtag['onclick'].split("'")[1])
+    print('해시 태그: ', end="")
+    for hashtag in product_hashtag_arr:
+        print(hashtag, end=" ")
+    print()
 
-        # 가격
-        product_price = int(specific_data.find('span', {'id': 'goods_price'}).get_text().replace(',', ''))
-        print('가격: ' + str(product_price))
+    # 가격
+    product_price = int(specific_data.find('span', {'id': 'goods_price'}).get_text().replace(',', ''))
+    print('가격: ' + str(product_price))
 
 
 # 메인 화면을 파싱한다.
@@ -148,6 +141,7 @@ for category in categories:
     sub_category_groups = category.find('ul', {'class': 'nav_category_menu'})
     sub_category = []
 
+
     for sub_category_group in sub_category_groups:
 
         # NavigableString 객체를 걸러내준다.
@@ -155,6 +149,8 @@ for category in categories:
             temp = sub_category_group.find('a')
             category_link[name][temp.get_text().strip().split(' (')[0]] = temp['href'].split('/')[-1]
 
+del category_link['인기']
+
 for category in category_link:
-    print('Start ' + category + ' Category.')
+    print('<' + category + '>')
     get_submenu_link(category)
