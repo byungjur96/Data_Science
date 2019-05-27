@@ -72,34 +72,54 @@ def get_product_info(sub_url):
             category_arr.append(product_category)
 
     # 브랜드
-    product_brand = category_arr[0].get_text()
-    product_dict["brand"] = product_brand
+    product_brand = category_arr[0]
+    if product_brand is not None:
+        product_dict["brand"] = product_brand.get_text()
+    else:
+        print('No Brand.')
 
     # 종류
-    product_type = category_arr[1].get_text()
-    product_dict["category"] = product_type
+    product_type = category_arr[1]
+    if product_type is not None:
+        product_dict["category"] = product_type.get_text()
+    else:
+        print('No Type.')
 
     # 세부 종류
-    product_subtype = category_arr[2].get_text()
-    product_dict["subCategory"] = product_subtype
+    product_subtype = category_arr[2]
+    if product_subtype is not None:
+        product_dict["subCategory"] = product_subtype.get_text()
+    else:
+        print('No Subtype.')
 
     # 시즌
     product_season = specific_data.find('span', {'class': 'txt_gender'}).parent.find('strong')
     if product_season:
         product_season = product_season.get_text().replace('\t', '').replace(' ', '').strip()
         product_dict["season"] = product_season
+    else:
+        print('No Season.')
 
     # 성별
-    product_gender = specific_data.find('span', {'class': 'txt_gender'}).get_text().strip()
-    product_dict["gender"] = product_gender
+    product_gender = specific_data.find('span', {'class': 'txt_gender'})
+    if product_gender is not None:
+        product_dict["gender"] = product_gender.get_text().strip()
+    else:
+        print('No Gender.')
 
     # 조회수
-    product_view = int(specific_data.find_all('span', {'class': 'pageview_number'})[0].previous_sibling.get_text().replace(',', ''))
-    product_dict["totalView"] = product_view
+    product_view = specific_data.find_all('span', {'class': 'pageview_number'})[0].previous_sibling
+    if product_view is not None:
+        product_dict["totalView"] = int(product_view.get_text().replace(',', ''))
+    else:
+        print('No Total View.')
 
     # 장바구니+관심
-    product_interest = int(specific_data.find('span', {'class': 'wish_number'}).previous_sibling.get_text().replace(',', ''))
-    product_dict["wishNum"] = product_interest
+    product_interest = specific_data.find('span', {'class': 'wish_number'})
+    if product_interest is not None:
+        product_dict["wishNum"] = int(product_interest.previous_sibling.get_text().replace(',', ''))
+    else:
+        print('No Interest.')
 
     # 누적 판매
     if len(specific_data.find_all('span', {'class': 'pageview_number'})) > 1:
@@ -125,8 +145,9 @@ def get_product_info(sub_url):
     product_dict["hashTag"] = product_hashtag_arr
 
     # 가격
-    product_price = int(specific_data.find('span', {'id': 'goods_price'}).get_text().replace(',', ''))
-    product_dict["price"] = product_price
+    product_price = specific_data.find('span', {'id': 'goods_price'})
+    if product_price is not None:
+        product_dict["price"] = int(product_price.get_text().replace(',', ''))
     return [product_name, product_dict]
 
 
@@ -152,7 +173,6 @@ for category in categories:
     sub_category = []
 
     for sub_category_group in sub_category_groups:
-
         # NavigableString 객체를 걸러내준다.
         if isinstance(sub_category_group, Tag):
             temp = sub_category_group.find('a')
