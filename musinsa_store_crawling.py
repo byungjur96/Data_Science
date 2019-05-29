@@ -9,9 +9,11 @@ from collections import OrderedDict
 root_url = 'https://store.musinsa.com'
 context = ssl._create_unverified_context()
 total = 0
+top = 0
+bottom = 0
 category_code = {
-    '상의': '001',
-    '하의': '003'
+    'top': '001',
+    'bottom': '003'
 }
 
 
@@ -178,7 +180,7 @@ for category in category_code:
     category_json[category] = OrderedDict()
     get_submenu_link(category)
     with open(category+'.json', 'w', encoding='utf-8') as make_file:
-        json.dumps(category_json[category], ensure_ascii=False, indent="\t")
+        json.dump(category_json[category], make_file, ensure_ascii=False, indent="\t")
     now = time.time()
     print('Total ' + str(total) + ' Products.')
     print('Takes ' + str(start_time-now) + ' sec')
@@ -186,5 +188,4 @@ for category in category_code:
 
 
 print('Ends at ' + str(datetime.datetime.now()))
-
 
