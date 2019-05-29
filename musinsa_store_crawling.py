@@ -20,7 +20,6 @@ category_code = {
 def get_submenu_link(menu):
     # 메뉴의 코드 파악
     code = category_code[menu]
-    print(code)
     sub_link = 'https://store.musinsa.com/app/items/lists/{0}'.format(code)
     with urllib.request.urlopen(sub_link, context=context) as sub_menu_url:
         sub_menu_page = sub_menu_url.read()
@@ -42,6 +41,7 @@ def get_submenu_link(menu):
 
 # 하나의 페이지에 있는 모든 product 들의 링크를 받아온다.
 def get_product_list(page_link):
+    global top, bottom
     with urllib.request.urlopen(page_link, context=context) as page_url:
         page_info = page_url.read()
     sample_data = BeautifulSoup(page_info, 'lxml')
@@ -51,7 +51,16 @@ def get_product_list(page_link):
     for item in item_box:
         item_info = item.find('div', {'class': 'li_inner'}).find('a')['href']
         p_name, p_characteristic = get_product_info(root_url+item_info)
-        category_json[category][p_name] = p_characteristic
+        if p_characteristic['category'] == '상의':
+            category_json[category]['top'+str(top)] = p_characteristic
+            top += 1
+        else:
+            category_json['category']['bottom' + str(bottom)] = p_characteristic
+            bottom += 1
+    ################################### 테스트용 코드 ###################################
+    with open(category+'.json', 'w', encoding='utf-8') as make_file:
+        json.dump(category_json[category], make_file, ensure_ascii=False, indent="\t")
+    ##################################################################################
 
 
 # 하나의 제품에 대해서 상세 정보를 받아온다.
