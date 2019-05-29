@@ -9,30 +9,33 @@ from collections import OrderedDict
 root_url = 'https://store.musinsa.com'
 context = ssl._create_unverified_context()
 total = 0
+category_code = {
+    '상의': '001',
+    '하의': '003'
+}
 
 
 def get_submenu_link(menu):
-    for sub_menu in category_link[menu]:
-        sub_num = category_link[menu][sub_menu]
+    # 메뉴의 코드 파악
+    code = category_code[menu]
+    print(code)
+    sub_link = 'https://store.musinsa.com/app/items/lists/{0}'.format(code)
+    with urllib.request.urlopen(sub_link, context=context) as sub_menu_url:
+        sub_menu_page = sub_menu_url.read()
+    sub_menu_data = BeautifulSoup(sub_menu_page, 'lxml')
+    pages = int(sub_menu_data.find('span', {'class': 'totalPagingNum'}).get_text().strip())
+    print(menu + ' has total ' + str(pages) + ' pages.')
 
-        # 각 하위메뉴의 전체 페이지 수를 먼저 파악
-        sub_link = 'https://store.musinsa.com/app/items/lists/{0}'.format(sub_num)
-        with urllib.request.urlopen(sub_link, context=context) as sub_menu_url:
-            sub_menu_page = sub_menu_url.read()
-        sub_menu_data = BeautifulSoup(sub_menu_page, 'lxml')
-        pages = int(sub_menu_data.find('span', {'class': 'totalPagingNum'}).get_text().strip())
-        print(sub_menu + ' has total ' + str(pages) + ' pages.')
-
-        # 각 페이지마다의 주소
-        for page in range(pages):
-            page_num = page + 1
-            sub_link = '{0}/app/items/lists/{1}/?category=&d_cat_cd={1}&u_cat_cd=&' \
-                       'brand=&sort=pop&display_cnt=120&page={2}&page_kind=category&list_kind=small&' \
-                       'free_dlv=&ex_soldout=&sale_goods=&exclusive_yn=&price=&color=&a_cat_cd=&sex=&size=&tag=&' \
-                       'popup=&brand_favorite_yn=&goods_favorite_yn=&blf_yn=&=&price1=&price2=&brand_favorite=&' \
-                       'goods_favorite=&chk_exclusive=&chk_sale=&chk_soldout='.format(root_url, sub_num, page_num)
-            print('Page ' + str(page_num) + ' Starts.')
-            get_product_list(sub_link)
+    # 각 페이지마다의 주소
+    for page in range(pages):
+        page_num = page + 1
+        sub_link = '{0}/app/items/lists/{1}/?category=&d_cat_cd={1}&u_cat_cd=&' \
+                   'brand=&sort=pop&display_cnt=120&page={2}&page_kind=category&list_kind=small&' \
+                   'free_dlv=&ex_soldout=&sale_goods=&exclusive_yn=&price=&color=&a_cat_cd=&sex=&size=&tag=&' \
+                   'popup=&brand_favorite_yn=&goods_favorite_yn=&blf_yn=&=&price1=&price2=&brand_favorite=&' \
+                   'goods_favorite=&chk_exclusive=&chk_sale=&chk_soldout='.format(root_url, code, page_num)
+        print('Page ' + str(page_num) + ' Starts.')
+        get_product_list(sub_link)
 
 
 # 하나의 페이지에 있는 모든 product 들의 링크를 받아온다.
@@ -160,7 +163,6 @@ with urllib.request.urlopen(root_url, context=context) as url:
 home_data = BeautifulSoup(home, 'lxml')
 
 # 홈페이지 내의 카테고리를 딕셔너리 타입으로 만든다.
-category_link = dict()
 category_json = OrderedDict()
 category_group = home_data.find('nav', {'class': 'nav_menu'})
 categories = category_group.find_all('div', {'class': 'nav_category'})
@@ -168,22 +170,12 @@ categories = category_group.find_all('div', {'class': 'nav_category'})
 # 딕셔너리 타입으로 만든다.
 for category in categories:
     name = category.find('span', {'class': 'nav_kr'}).get_text().split(' (')[0]
-    category_link[name] = dict()
     sub_category_groups = category.find('ul', {'class': 'nav_category_menu'})
     sub_category = []
 
-    for sub_category_group in sub_category_groups:
-        # NavigableString 객체를 걸러내준다.
-        if isinstance(sub_category_group, Tag):
-            temp = sub_category_group.find('a')
-            category_link[name][temp.get_text().strip().split(' (')[0]] = temp['href'].split('/')[-1]
-
-# 인기 카테고리는 중복이므로 확인하지 않는다.
-del category_link['인기']
-
-for category in category_link:
+for category in category_code:
     print('<' + category + '>')
-    category_json[category] = {}
+    category_json[category] = OrderedDict()
     get_submenu_link(category)
     with open(category+'.json', 'w', encoding='utf-8') as make_file:
         json.dumps(category_json[category], ensure_ascii=False, indent="\t")
