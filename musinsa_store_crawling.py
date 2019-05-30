@@ -5,7 +5,6 @@ import time
 import datetime
 import json
 from collections import OrderedDict
-# urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed (_ssl.c:749)
 
 root_url = 'https://store.musinsa.com'
 context = ssl._create_unverified_context()
@@ -50,12 +49,34 @@ def get_product_list(page_link):
     item_boxes = sample_data.find('ul', {'id': 'searchList'})
     item_box = item_boxes.find_all('li', {'class': 'li_box'})
     for item in item_box:
-        item_info = item.find('div', {'class': 'li_inner'}).find('a')['href']
-        p_name, p_characteristic = get_product_info(root_url+item_info)
+        item_info = item.find('div', {'class': 'li_inner'})
+        item_img_link = item_info.find('img', {'class': 'lazy'})
+
+        p_name, p_characteristic = get_product_info(root_url+item_info.find('a')['href'])
+
+        # 상의 (top)
         if p_characteristic['category'] == '상의':
+            # image가 존재하지 않는 경우
+            if item_img_link is None:
+                print('* No Image! *')
+
+            # image가 존재하는 경우 다운로드
+            else:
+                img_link = 'https:' + item_img_link['data-original']
+                urllib.request.urlretrieve(img_link, "./top/top{0}.jpg".format(top))
             category_json[category]['top'+str(top)] = p_characteristic
             top += 1
+
+        # 하의 (bottom)
         else:
+            # image가 존재하지 않는 경우
+            if item_img_link is None:
+                print('* No Image! *')
+
+            # image가 존재하는 경우 다운로드
+            else:
+                img_link = 'https:' + item_img_link['data-original']
+                urllib.request.urlretrieve(img_link, "./bottom/bottom{0}.jpg".format(bottom))
             category_json['category']['bottom' + str(bottom)] = p_characteristic
             bottom += 1
 
@@ -64,15 +85,15 @@ def get_product_list(page_link):
 def get_product_info(sub_url):
     global total
     total += 1
-
+    product_dict = OrderedDict()
     print(sub_url)
 
-    product_dict = OrderedDict()
     with urllib.request.urlopen(sub_url, context=context) as specific_url:
         specific_page = specific_url.read()
 
     # 페이지 파싱
     specific_data = BeautifulSoup(specific_page, 'lxml')
+
     # 이름
     product_name = specific_data.find('span', {'class': 'product_title'}).find('span').get_text()
 
@@ -188,13 +209,13 @@ for category in category_code:
     print('<' + category + '>')
     category_json[category] = OrderedDict()
     get_submenu_link(category)
+
     with open(category+'.json', 'w', encoding='utf-8') as make_file:
         json.dump(category_json[category], make_file, ensure_ascii=False, indent="\t")
     now = time.time()
     print('Total ' + str(total) + ' Products.')
     print('Takes ' + str(start_time-now) + ' sec')
     start_time = now
-
 
 print('Ends at ' + str(datetime.datetime.now()))
 
