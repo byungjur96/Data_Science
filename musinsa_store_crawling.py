@@ -1,7 +1,8 @@
 from bs4 import BeautifulSoup, Tag
 import urllib.request
 import ssl  # urllib의 오류 해결을 위한 라이브러리
-import time, datetime
+import time
+import datetime
 import json
 from collections import OrderedDict
 # urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed (_ssl.c:749)
@@ -57,10 +58,6 @@ def get_product_list(page_link):
         else:
             category_json['category']['bottom' + str(bottom)] = p_characteristic
             bottom += 1
-    ################################### 테스트용 코드 ###################################
-    with open(category+'.json', 'w', encoding='utf-8') as make_file:
-        json.dump(category_json[category], make_file, ensure_ascii=False, indent="\t")
-    ##################################################################################
 
 
 # 하나의 제품에 대해서 상세 정보를 받아온다.
@@ -86,23 +83,26 @@ def get_product_info(sub_url):
             category_arr.append(product_category)
 
     # 브랜드
-    product_brand = category_arr[0]
-    if product_brand is not None:
-        product_dict["brand"] = product_brand.get_text()
+    if len(category_arr) > 0:
+        product_brand = category_arr[0]
+        if product_brand is not None:
+            product_dict["brand"] = product_brand.get_text()
     else:
         print('No Brand.')
 
     # 종류
-    product_type = category_arr[1]
-    if product_type is not None:
-        product_dict["category"] = product_type.get_text()
+    if len(category_arr) > 1:
+        product_type = category_arr[1]
+        if product_type is not None:
+            product_dict["category"] = product_type.get_text()
     else:
         print('No Type.')
 
     # 세부 종류
-    product_subtype = category_arr[2]
-    if product_subtype is not None:
-        product_dict["subCategory"] = product_subtype.get_text()
+    if len(category_arr) > 2:
+        product_subtype = category_arr[2]
+        if product_subtype is not None:
+            product_dict["subCategory"] = product_subtype.get_text()
     else:
         print('No Subtype.')
 
